@@ -11,10 +11,11 @@ namespace qs::service::notifications {
 struct DBusNotificationImage {
 	qint32 width = 0;
 	qint32 height = 0;
+	qint32 rowstride = 0;
 	bool hasAlpha = false;
 	QByteArray data;
 
-	// valid only for the lifetime of the pixmap
+	// Returns an owned image that survives notification updates and closes.
 	[[nodiscard]] QImage createImage() const;
 };
 

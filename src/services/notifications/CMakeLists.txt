@@ -29,3 +29,13 @@ target_link_libraries(quickshell-service-notifications PRIVATE Qt::Quick Qt::DBu
 target_link_libraries(quickshell PRIVATE quickshell-service-notificationsplugin)
 
 qs_module_pch(quickshell-service-notifications SET dbus)
+
+if (BUILD_TESTING)
+	find_program(DBUS_RUN_SESSION dbus-run-session REQUIRED)
+	add_executable(notification-image-test test/dbusimage.cpp)
+	target_link_libraries(notification-image-test PRIVATE
+		Qt::Test Qt::Quick Qt::DBus quickshell-service-notifications quickshell-core quickshell-window quickshell-ui quickshell-io
+	)
+	add_test(NAME notification-image COMMAND ${DBUS_RUN_SESSION} -- $<TARGET_FILE:notification-image-test>)
+	set_tests_properties(notification-image PROPERTIES TIMEOUT 30)
+endif()
