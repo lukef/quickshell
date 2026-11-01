@@ -50,7 +50,7 @@ void AuthFlow::setSelectedIdentity(Identity* identity) {
 }
 
 void AuthFlow::cancelFromAgent() {
-	if (!this->currentSession) return;
+	if (!this->currentSession || this->bIsCancelled.value() || this->bIsCompleted.value()) return;
 
 	qCDebug(logPolkitState) << "cancelling authentication request from agent";
 
@@ -67,7 +67,7 @@ void AuthFlow::cancelFromAgent() {
 }
 
 void AuthFlow::submit(const QString& value) {
-	if (!this->currentSession) return;
+	if (!this->currentSession || this->bIsCancelled.value() || this->bIsCompleted.value()) return;
 
 	qCDebug(logPolkitState) << "submitting response to authentication request";
 
@@ -81,7 +81,7 @@ void AuthFlow::submit(const QString& value) {
 }
 
 void AuthFlow::cancelAuthenticationRequest() {
-	if (!this->currentSession) return;
+	if (!this->currentSession || this->bIsCancelled.value() || this->bIsCompleted.value()) return;
 
 	qCDebug(logPolkitState) << "cancelling authentication request by user request";
 

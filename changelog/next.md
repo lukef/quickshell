@@ -5,6 +5,7 @@
 ## Bug Fixes
 
 - Fixed malformed notification images crashing the shell, incorrect RGB row alignment, and cached images referencing freed notification data.
+- Fixed completed or cancelled polkit authentication flows accepting further responses and cancellation requests.
 
 - Fixed ScriptModel not sending role updates on changed data that compares equal by key or structure.
 - Fixed Hyprland workspaces keeping their old id after Hyprland changes it.
