@@ -1,4 +1,5 @@
 #include "session_lock.hpp"
+#include <utility>
 
 #include <private/qwaylandscreen_p.h>
 #include <qcolor.h>
@@ -36,7 +37,7 @@ void WlSessionLock::onReload(QObject* oldInstance) {
 
 	if (old != nullptr) {
 		QObject::disconnect(old->manager, nullptr, old, nullptr);
-		this->manager = old->manager;
+		this->manager = std::exchange(old->manager, nullptr);
 		this->manager->setParent(this);
 	} else {
 		this->manager = new SessionLockManager(this);

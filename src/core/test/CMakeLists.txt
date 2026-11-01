@@ -9,3 +9,5 @@ qs_test(ringbuffer ringbuf.cpp)
 qs_test(scriptmodel scriptmodel.cpp)
 qs_test(stacklist stacklist.cpp)
 qs_test(objectmodel objectmodel.cpp)
+
+qs_test(reload reload.cpp)

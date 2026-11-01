@@ -60,12 +60,28 @@ void ReloadPropagator::onReload(QObject* oldInstance) {
 	for (auto i = 0; i < this->mChildren.length(); i++) {
 		auto* newChild = qobject_cast<Reloadable*>(this->mChildren.at(i));
 		if (newChild != nullptr) {
-			auto* oldChild = old == nullptr || old->mChildren.length() <= i
-			                   ? nullptr
-			                   : qobject_cast<Reloadable*>(old->mChildren.at(i));
+			Reloadable* oldChild = nullptr;
+			if (old != nullptr) {
+				if (!newChild->mReloadableId.isEmpty()) {
+					for (auto* object: old->mChildren) {
+						auto* candidate = qobject_cast<Reloadable*>(object);
+						if (candidate && candidate->mReloadableId == newChild->mReloadableId) {
+							oldChild = candidate;
+							break;
+						}
+					}
+				}
+				// Keep positional compatibility for unnamed children and the
+				// first reload that introduces an explicit identity. Never
+				// consume a different explicitly identified controller.
+				if (!oldChild && old->mChildren.length() > i) {
+					auto* candidate = qobject_cast<Reloadable*>(old->mChildren.at(i));
+					if (candidate && candidate->mReloadableId.isEmpty()) oldChild = candidate;
+				}
+			}
 			newChild->reload(oldChild);
 		} else {
-			Reloadable::reloadRecursive(newChild, oldInstance);
+			Reloadable::reloadRecursive(this->mChildren.at(i), oldInstance);
 		}
 	}
 }
