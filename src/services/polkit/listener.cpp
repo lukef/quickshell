@@ -1,4 +1,8 @@
 #include "listener.hpp"
+#include <QFile>
+#include <QFileInfo>
+#include <QRegularExpression>
+#include <QStringList>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -38,6 +42,58 @@ using QsPolkitAgent = struct _QsPolkitAgent {
 };
 
 G_DEFINE_TYPE(QsPolkitAgent, qs_polkit_agent, POLKIT_AGENT_TYPE_LISTENER)
+
+// polkitd hands an agent only the caller and subject PIDs, never the details
+// the caller asked with, so pkexec's own command line is read from pkexec. Only
+// a caller running as root that is pkexec is believed: pkexec is setuid, so
+// the user cannot rewrite its arguments, while any process of the user's own
+// could ask about this action with a command line of its choosing.
+struct PkexecCommand {
+	QString command;
+	QString targetUser;
+};
+
+static bool runsAsRoot(int pid) {
+	QFile status(QString("/proc/%1/status").arg(pid));
+	if (!status.open(QIODevice::ReadOnly)) return false;
+	for (const auto& line: QString::fromUtf8(status.readAll()).split('\n')) {
+		if (!line.startsWith("Uid:")) continue;
+		const auto ids = line.mid(4).split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+		return ids.size() >= 2 && ids[1] == "0";
+	}
+	return false;
+}
+
+static QString shellQuoted(const QString& argument) {
+	static const QRegularExpression plain("^[A-Za-z0-9_@%+=:,./-]+$");
+	if (plain.match(argument).hasMatch()) return argument;
+	return "'" + QString(argument).replace("'", "'\\''") + "'";
+}
+
+static PkexecCommand pkexecCommand(int pid) {
+	if (pid <= 0 || !runsAsRoot(pid)) return {};
+	QFile file(QString("/proc/%1/cmdline").arg(pid));
+	if (!file.open(QIODevice::ReadOnly)) return {};
+	auto arguments = QString::fromUtf8(file.readAll()).split(QChar(u'\0'));
+	if (!arguments.isEmpty() && arguments.last().isEmpty()) arguments.removeLast();
+	if (arguments.isEmpty() || QFileInfo(arguments[0]).fileName() != "pkexec") return {};
+
+	PkexecCommand result {.targetUser = "root"};
+	qsizetype index = 1;
+	while (index < arguments.size() && arguments[index].startsWith('-')) {
+		if (arguments[index] == "--user" || arguments[index] == "-u") {
+			if (index + 1 < arguments.size()) result.targetUser = arguments[index + 1];
+			index += 2;
+		} else {
+			index += 1;
+		}
+	}
+	QStringList program;
+	for (; index < arguments.size(); index++) program << shellQuoted(arguments[index]);
+	if (program.isEmpty()) return {};
+	result.command = program.join(' ');
+	return result;
+}
 
 static void initiate_authentication(
     PolkitAgentListener* listener,
@@ -149,7 +205,7 @@ static void initiate_authentication(
     const gchar* actionId,
     const gchar* message,
     const gchar* iconName,
-    PolkitDetails* /*unused*/,
+    PolkitDetails* details,
     const gchar* cookie,
     GList* identities,
     GCancellable* cancellable,
@@ -174,12 +230,30 @@ static void initiate_authentication(
 		identityVector.emplace_back(identity);
 	}
 
-	// The original strings are freed by the caller after we return, so we
+	// Polkit overwrites this detail with the subject PID. Snapshot the executable
+    // now, before this request can wait behind another authorization.
+    bool validPid = false;
+    const int pid = QString::fromUtf8(polkit_details_lookup(details, "polkit.subject-pid")).toInt(&validPid);
+    QString requester;
+    if (validPid && pid > 0) {
+        const QString executable = QFileInfo(QString("/proc/%1/exe").arg(pid)).symLinkTarget();
+        requester = executable.isEmpty() ? QString("Process %1 (executable unavailable)").arg(pid)
+            : QString("%1 (PID %2)").arg(executable).arg(pid);
+    }
+    // Read now, while pkexec is certainly still the process waiting on this.
+    bool validCaller = false;
+    const int callerPid = QString::fromUtf8(polkit_details_lookup(details, "polkit.caller-pid")).toInt(&validCaller);
+    const bool exec = QString::fromUtf8(actionId) == QStringLiteral("org.freedesktop.policykit.exec");
+    const PkexecCommand pkexec = exec && validCaller ? pkexecCommand(callerPid) : PkexecCommand {};
+    // The original strings are freed by the caller after we return, so we
 	// copy them into QStrings.
 	auto* request = new qs::service::polkit::AuthRequest {
 	    .actionId = QString::fromUtf8(actionId),
 	    .message = QString::fromUtf8(message),
 	    .iconName = QString::fromUtf8(iconName),
+	    .requester = requester,
+	    .command = exec ? pkexec.command : QString::fromUtf8(polkit_details_lookup(details, "command")),
+	    .targetUser = exec ? pkexec.targetUser : QString(),
 	    .cookie = QString::fromUtf8(cookie),
 	    .identities = std::move(identityVector),
 

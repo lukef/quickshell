@@ -658,11 +658,15 @@ HyprlandWorkspace* HyprlandIpc::findWorkspaceByName(
 }
 
 void HyprlandIpc::refreshWorkspaces(bool canCreate) {
+	// A public refresh may already be in flight when startup or hotplug asks
+	// to discover new objects. Coalescing must preserve that stronger request.
+	this->workspaceCreationRequested |= canCreate;
 	if (this->requestingWorkspaces) return;
 	this->requestingWorkspaces = true;
 
-	this->makeRequest("j/workspaces", [this, canCreate](bool success, const QByteArray& resp) {
+	this->makeRequest("j/workspaces", [this](bool success, const QByteArray& resp) {
 		this->requestingWorkspaces = false;
+		const bool canCreate = std::exchange(this->workspaceCreationRequested, false);
 		if (!success) return;
 
 		qCDebug(logHyprlandIpc) << "Parsing workspaces response";
@@ -843,11 +847,13 @@ void HyprlandIpc::onFocusedMonitorDestroyed() {
 }
 
 void HyprlandIpc::refreshMonitors(bool canCreate) {
+	this->monitorCreationRequested |= canCreate;
 	if (this->requestingMonitors) return;
 	this->requestingMonitors = true;
 
-	this->makeRequest("j/monitors", [this, canCreate](bool success, const QByteArray& resp) {
+	this->makeRequest("j/monitors", [this](bool success, const QByteArray& resp) {
 		this->requestingMonitors = false;
+		const bool canCreate = std::exchange(this->monitorCreationRequested, false);
 		if (!success) return;
 
 		this->monitorsRequested = true;

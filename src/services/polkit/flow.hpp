@@ -34,6 +34,9 @@ class AuthFlow
 	///
 	/// This is a machine-readable identifier.
 	Q_PROPERTY(QString actionId READ actionId CONSTANT);
+	Q_PROPERTY(QString requester READ requester CONSTANT);
+	Q_PROPERTY(QString command READ command CONSTANT);
+	Q_PROPERTY(QString targetUser READ targetUser CONSTANT);
 
 	/// A cookie that identifies this authentication request.
 	///
@@ -99,6 +102,9 @@ public:
 	[[nodiscard]] const QString& message() const { return this->mRequest->message; };
 	[[nodiscard]] const QString& iconName() const { return this->mRequest->iconName; };
 	[[nodiscard]] const QString& actionId() const { return this->mRequest->actionId; };
+	[[nodiscard]] const QString& requester() const { return this->mRequest->requester; };
+	[[nodiscard]] const QString& command() const { return this->mRequest->command; };
+	[[nodiscard]] const QString& targetUser() const { return this->mRequest->targetUser; };
 	[[nodiscard]] const QString& cookie() const { return this->mRequest->cookie; };
 	[[nodiscard]] const QList<Identity*>& identities() const { return this->mIdentities; };
 

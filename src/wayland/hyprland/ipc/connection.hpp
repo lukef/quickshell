@@ -142,6 +142,8 @@ private:
 	bool valid = false;
 	bool requestingMonitors = false;
 	bool requestingWorkspaces = false;
+	bool monitorCreationRequested = false;
+	bool workspaceCreationRequested = false;
 	bool requestingToplevels = false;
 	bool monitorsRequested = false;
 

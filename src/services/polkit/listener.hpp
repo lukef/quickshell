@@ -23,7 +23,11 @@ struct AuthRequest {
 	QString message;
 	//! Icon name according to the FreeDesktop specification. May be empty.
 	QString iconName;
-	// Details intentionally omitted because nothing seems to use them.
+	//! Executable captured from the authority-provided subject PID.
+	QString requester;
+	//! The full command: read from pkexec itself, or Brix sudo's own detail. Never rebuilt from the message.
+	QString command;
+	QString targetUser;
 	QString cookie;
 	//! List of users/groups that can be used for authentication.
 	std::vector<GObjectRef<PolkitIdentity>> identities;
