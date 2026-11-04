@@ -163,7 +163,12 @@ void PolkitAgentImpl::activateAuthenticationRequest() {
 	    this->bActiveFlow.value(),
 	    &AuthFlow::isCompletedChanged,
 	    this,
-	    &PolkitAgentImpl::finishAuthenticationRequest
+	    &PolkitAgentImpl::finishAuthenticationRequest,
+	    // This signal fires inside the flow's property notification, where the
+	    // bindings on the active flow would not settle until after the next request
+	    // had started. QML would see that request begin with the old flow still
+	    // current, and the old flow's outcome arrive against the new one.
+	    Qt::QueuedConnection
 	);
 
 	emit this->qmlAgent->authenticationRequestStarted();
