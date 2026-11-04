@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qstring.h>
+#include <qvariant.h>
 
 #define POLKIT_AGENT_I_KNOW_API_IS_SUBJECT_TO_CHANGE
 // This causes a problem with variables of the name.
@@ -23,11 +24,8 @@ struct AuthRequest {
 	QString message;
 	//! Icon name according to the FreeDesktop specification. May be empty.
 	QString iconName;
-	//! Executable captured from the authority-provided subject PID.
-	QString requester;
-	//! The full command: read from pkexec itself, or Brix sudo's own detail. Never rebuilt from the message.
-	QString command;
-	QString targetUser;
+	//! Details polkit forwarded with this request.
+	QVariantMap details;
 	QString cookie;
 	//! List of users/groups that can be used for authentication.
 	std::vector<GObjectRef<PolkitIdentity>> identities;

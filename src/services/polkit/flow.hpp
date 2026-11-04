@@ -3,6 +3,7 @@
 #include <qobject.h>
 #include <qproperty.h>
 #include <qqmlintegration.h>
+#include <qvariant.h>
 
 #include "../../core/retainable.hpp"
 #include "identity.hpp"
@@ -34,9 +35,12 @@ class AuthFlow
 	///
 	/// This is a machine-readable identifier.
 	Q_PROPERTY(QString actionId READ actionId CONSTANT);
-	Q_PROPERTY(QString requester READ requester CONSTANT);
-	Q_PROPERTY(QString command READ command CONSTANT);
-	Q_PROPERTY(QString targetUser READ targetUser CONSTANT);
+
+	/// Details polkit forwarded with this request, such as `polkit.subject-pid`
+	/// or anything the caller provided.
+	///
+	/// The caller controls its own entries, so they should not be treated as verified.
+	Q_PROPERTY(QVariantMap details READ details CONSTANT);
 
 	/// A cookie that identifies this authentication request.
 	///
@@ -102,9 +106,7 @@ public:
 	[[nodiscard]] const QString& message() const { return this->mRequest->message; };
 	[[nodiscard]] const QString& iconName() const { return this->mRequest->iconName; };
 	[[nodiscard]] const QString& actionId() const { return this->mRequest->actionId; };
-	[[nodiscard]] const QString& requester() const { return this->mRequest->requester; };
-	[[nodiscard]] const QString& command() const { return this->mRequest->command; };
-	[[nodiscard]] const QString& targetUser() const { return this->mRequest->targetUser; };
+	[[nodiscard]] const QVariantMap& details() const { return this->mRequest->details; };
 	[[nodiscard]] const QString& cookie() const { return this->mRequest->cookie; };
 	[[nodiscard]] const QList<Identity*>& identities() const { return this->mIdentities; };
 

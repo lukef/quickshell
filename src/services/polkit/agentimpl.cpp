@@ -106,6 +106,8 @@ void PolkitAgentImpl::registerComplete(bool success) {
 void PolkitAgentImpl::initiateAuthentication(AuthRequest* request) {
 	qCDebug(logPolkit) << "incoming authentication request for action" << request->actionId;
 
+	emit this->qmlAgent->authenticationRequestReceived(request->actionId, request->cookie, request->details);
+
 	this->queuedRequests.emplace_back(request);
 
 	if (this->queuedRequests.size() == 1) {

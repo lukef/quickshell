@@ -6,6 +6,7 @@
 #include <qproperty.h>
 #include <qqmlintegration.h>
 #include <qqmlparserstatus.h>
+#include <qvariant.h>
 #include <sys/types.h>
 
 #include "flow.hpp"
@@ -64,6 +65,13 @@ public:
 	[[nodiscard]] QBindable<bool> isRegistered() { return &this->bIsRegistered; };
 
 signals:
+	/// Emitted as soon as a request arrives, which may be long before it becomes
+	/// the active @@flow if another request is being answered.
+	///
+	/// Anything describing the requesting process should be read here: a PID in
+	/// `details` can name a different process by the time the request is active.
+	void authenticationRequestReceived(const QString& actionId, const QString& cookie, const QVariantMap& details);
+
 	/// Emitted when an application makes a request that requires authentication.
 	///
 	/// At this point, @@state will be populated with relevant information.
