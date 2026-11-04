@@ -110,7 +110,7 @@ void PolkitAgentImpl::initiateAuthentication(AuthRequest* request) {
 
 	this->queuedRequests.emplace_back(request);
 
-	if (this->queuedRequests.size() == 1) {
+	if (!this->bActiveFlow.value()) {
 		this->activateAuthenticationRequest();
 	}
 }
@@ -152,6 +152,8 @@ void PolkitAgentImpl::activateAuthenticationRequest() {
 		) << "no supported identities available for authentication request, cancelling.";
 		req->cancel("Error requesting authentication: no supported identities available.");
 		delete req;
+		// Nothing will finish this request, so nothing else would start the next one.
+		this->activateAuthenticationRequest();
 		return;
 	}
 
